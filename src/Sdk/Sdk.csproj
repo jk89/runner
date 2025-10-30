@@ -33,5 +33,8 @@
         <EmbeddedResource Include="DTPipelines\workflow-v1.0.json">
             <LogicalName>GitHub.DistributedTask.Pipelines.ObjectTemplating.workflow-v1.0.json</LogicalName>
         </EmbeddedResource>
+        <EmbeddedResource Include="WorkflowParser\workflow-v1.0.json">
+            <LogicalName>GitHub.Actions.WorkflowParser.workflow-v1.0.json</LogicalName>
+        </EmbeddedResource>
     </ItemGroup>
 </Project>
