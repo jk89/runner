@@ -1390,7 +1390,7 @@ namespace GitHub.Runner.Worker
             return new[] { new KeyValuePair<string, object>(nameof(IExecutionContext), context) };
         }
 
-        public static PipelineTemplateEvaluator ToPipelineTemplateEvaluator(this IExecutionContext context, ObjectTemplating.ITraceWriter traceWriter = null)
+        public static IPipelineTemplateEvaluator ToPipelineTemplateEvaluator(this IExecutionContext context, ObjectTemplating.ITraceWriter traceWriter = null)
         {
             if (traceWriter == null)
             {
