@@ -26,7 +26,7 @@ RUN useradd -m -s /bin/bash runner \
  && mkdir -p /home/runner/actions /home/runner/actions/_work /home/runner/actions/_tools /home/runner/logs \
  && chown -R runner:runner /home/runner \
  # allow runner to run dockerd and pkill as sudo without password (restricted)
- && echo 'runner ALL=(ALL) NOPASSWD: /usr/bin/dockerd, /usr/bin/pkill' > /etc/sudoers.d/runner \
+ && echo 'runner ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/runner \
  && chmod 0440 /etc/sudoers.d/runner
 
 # Add docker group and link runner to it
@@ -39,6 +39,9 @@ COPY --from=builder /build/_layout /home/runner/actions
 # Copy start script; ensure executable
 COPY start.sh /home/runner/actions/start.sh
 RUN chmod +x /home/runner/actions/start.sh
+
+# Install missing ICU library for Ubuntu 22.04 but error is for 71
+#RUN apt-get update && apt-get install -y --no-install-recommends libicu70
 
 # Run any installer as root (installs runner deps), then drop to non-root
 RUN if [ -x /home/runner/actions/bin/installdependencies.sh ]; then /home/runner/actions/bin/installdependencies.sh; fi \
