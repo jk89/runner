@@ -1,0 +1,35 @@
+name: YOLO Runner Minimal Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  container-and-service:
+    runs-on: [self-hosted, yolo]
+
+    container:
+      image: node:18
+
+    services:
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inside container
+        run: |
+          echo "🐳 Node version inside container:"
+          node --version
+          echo "📦 NPM version:"
+          npm --version
+
+      - name: Test Redis service
+        run: |
+          echo "💾 Pinging Redis..."
+          redis-cli -h redis ping
