@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  gha-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gha-runner-yolo:latest
+    runtime: sysbox-runc
+    restart: unless-stopped
+    
+    environment:
+      - REPOSITORY=${REPOSITORY}
+      - ACCESS_TOKEN=${ACCESS_TOKEN}
+      - DOCKER_SYSBOX_RUNTIME=true
+      - RUNNER_NAME=${RUNNER_NAME:-yolo-runner-1}
+      - RUNNER_LABELS=${RUNNER_LABELS:-self-hosted,linux,docker,yolo,sysbox}
+    
+    volumes:
+      - runner-work:/home/runner/actions/_work
+      - runner-tools:/home/runner/actions/_tools
+
+volumes:
+  runner-work:
+  runner-tools:
