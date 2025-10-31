@@ -8,7 +8,6 @@ services:
     image: gha-runner-yolo:latest
     runtime: sysbox-runc
     restart: unless-stopped
-    user: root
     env_file:
       - .env
     volumes:

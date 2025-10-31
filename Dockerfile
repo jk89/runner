@@ -1,60 +1,46 @@
-# Stage 1: Build the modified runner
+# Stage 1: Builder
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:6.0 AS builder
-
 WORKDIR /build
-
-# Copy your modified source
 COPY . .
 
-# Build and package
-RUN chmod +x ./src/dev.sh && \
-    cd src && \
-    ./dev.sh layout && \
-    ./dev.sh package
+RUN chmod +x ./src/dev.sh && cd src && ./dev.sh layout && ./dev.sh package
 
-# Stage 2: Runtime image
-FROM --platform=$TARGETPLATFORM ubuntu:22.04
+# Stage 2: Runtime
+FROM --platform=$TARGETPLATFORM ubuntu:22.04 AS runtime
 
 ARG TARGETARCH
-ARG OS=linux
-
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install dependencies including Docker
-RUN apt-get update && apt-get install -y \
-    curl \
-    wget \
-    sudo \
-    git \
-    jq \
-    ca-certificates \
-    gnupg \
-    lsb-release && \
-    mkdir -p /etc/apt/keyrings && \
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
-    echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list && \
-    apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io docker-compose-plugin && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl wget sudo git jq ca-certificates gnupg lsb-release apt-transport-https gnupg2 \
+    iproute2 procps lsof util-linux gpg \
+  && mkdir -p /etc/apt/keyrings \
+  && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
+  && echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
+  && apt-get update && apt-get install -y --no-install-recommends docker-ce docker-ce-cli containerd.io docker-compose-plugin \
+  && rm -rf /var/lib/apt/lists/*
 
-# Create runner user
-RUN useradd -G sudo,docker -ms /bin/bash runner && \
-    install -o runner -g runner -m 0755 -d /home/runner/actions && \
-    echo 'runner ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/runner
+# Create non-root runner user and required dirs
+RUN useradd -m -s /bin/bash runner \
+ && mkdir -p /home/runner/actions /home/runner/actions/_work /home/runner/actions/_tools /home/runner/logs \
+ && chown -R runner:runner /home/runner \
+ # allow runner to run dockerd and pkill as sudo without password (restricted)
+ && echo 'runner ALL=(ALL) NOPASSWD: /usr/bin/dockerd, /usr/bin/pkill' > /etc/sudoers.d/runner \
+ && chmod 0440 /etc/sudoers.d/runner
+
+# Copy built runner layout from builder
+COPY --from=builder /build/_layout /home/runner/actions
+
+# Copy start script; ensure executable
+COPY start.sh /home/runner/actions/start.sh
+RUN chmod +x /home/runner/actions/start.sh
+
+# Run any installer as root (installs runner deps), then drop to non-root
+RUN if [ -x /home/runner/actions/bin/installdependencies.sh ]; then /home/runner/actions/bin/installdependencies.sh; fi \
+ && chown -R runner:runner /home/runner/actions
 
 USER runner
 WORKDIR /home/runner/actions
-
-# Copy built runner (it's at /build/_layout after running from src/)
-COPY --from=builder /build/_layout .
-
-COPY start.sh ./start.sh
-
-USER root
-
-RUN ./bin/installdependencies.sh && \
-    chmod +x ./start.sh && \
-    chown runner:runner ./start.sh
-
-USER runner
 
 CMD ["./start.sh"]
