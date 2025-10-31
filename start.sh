@@ -55,28 +55,7 @@ trap 'cleanup' EXIT
 
 # Start Docker daemon only via sudo (runner can run this; sudoers allows it)
 if [[ "${DOCKER_SYSBOX_RUNTIME:-}" == "true" ]]; then
-  echo "🐳 Configuring Docker daemon with sysbox-runc..."
-  
-  # Verify sysbox-runc is available
-  if [[ ! -x /usr/bin/sysbox-runc ]]; then
-    echo "❌ sysbox-runc not found at /usr/bin/sysbox-runc"
-    exit 1
-  fi
-  
-  # Create daemon config with sysbox-runc as default
-  sudo mkdir -p /etc/docker
-  sudo tee /etc/docker/daemon.json > /dev/null <<EOF
-{
-  "runtimes": {
-    "sysbox-runc": {
-      "path": "/usr/bin/sysbox-runc"
-    }
-  },
-  "default-runtime": "sysbox-runc"
-}
-EOF
-
-  echo "🐳 Starting Docker daemon with sysbox-runc as default runtime..."
+  echo "🐳 Starting Docker daemon (sudo) ..."
   sudo rm -f /home/runner/dockerd.pid 2>/dev/null || true
   mkdir -p /home/runner/logs
   sudo /usr/bin/dockerd --pidfile /home/runner/dockerd.pid &

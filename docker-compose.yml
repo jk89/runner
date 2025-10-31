@@ -13,7 +13,6 @@ services:
     volumes:
       - runner-work:/home/runner/actions/_work
       - runner-tools:/home/runner/actions/_tools
-      - /usr/bin/sysbox-runc:/usr/bin/sysbox-runc:ro
 
 volumes:
   runner-work:
