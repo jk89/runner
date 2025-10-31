@@ -85,7 +85,7 @@ cleanup() {
     
     if [ "${DOCKER_SYSBOX_RUNTIME}" = "true" ]; then
         echo "🐳 Stopping Docker daemon..."
-        sudo pkill --pidfile /home/runner/dockerd.pid 2>/dev/null || true
+        pkill --pidfile /home/runner/dockerd.pid 2>/dev/null || true # sudo
     fi
     
     echo "👋 Exiting..."
@@ -99,8 +99,11 @@ trap 'cleanup' EXIT
 # Start Docker daemon if using Sysbox
 if [ "${DOCKER_SYSBOX_RUNTIME}" = "true" ]; then
     echo "🐳 Starting Docker daemon..."
-    sudo rm -f /home/runner/dockerd.pid
-    sudo nohup /usr/bin/dockerd --pidfile /home/runner/dockerd.pid > /var/log/dockerd.log 2>&1 < /dev/null &
+    rm -f /home/runner/dockerd.pid # sudo
+    mkdir -p /home/runner/logs
+    #nohup /usr/bin/dockerd --pidfile /home/runner/dockerd.pid > /home/runner/logs/dockerd.log  2>&1 < /dev/null & # sudo
+    /usr/bin/dockerd --pidfile /home/runner/dockerd.pid & 
+    #/var/log/dockerd.log
     
     echo "⏳ Waiting for Docker daemon..."
     for i in {1..30}; do
