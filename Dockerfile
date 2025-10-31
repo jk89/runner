@@ -29,6 +29,10 @@ RUN useradd -m -s /bin/bash runner \
  && echo 'runner ALL=(ALL) NOPASSWD: /usr/bin/dockerd, /usr/bin/pkill' > /etc/sudoers.d/runner \
  && chmod 0440 /etc/sudoers.d/runner
 
+# Add docker group and link runner to it
+RUN groupadd -g 999 docker || true \
+ && usermod -aG docker runner
+
 # Copy built runner layout from builder
 COPY --from=builder /build/_layout /home/runner/actions
 

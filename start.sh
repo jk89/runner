@@ -59,6 +59,17 @@ if [[ "${DOCKER_SYSBOX_RUNTIME:-}" == "true" ]]; then
   sudo rm -f /home/runner/dockerd.pid 2>/dev/null || true
   mkdir -p /home/runner/logs
   sudo /usr/bin/dockerd --pidfile /home/runner/dockerd.pid &
+  echo "⏳ Waiting for Docker socket..."
+  for i in {1..30}; do
+    if [[ -S /var/run/docker.sock ]]; then
+      sudo chmod 666 /var/run/docker.sock
+      if docker info > /dev/null 2>&1; then
+        echo "✅ Docker daemon ready"
+        break
+      fi
+    fi
+    sleep 1
+  done
 fi
 
 # Configure ephemeral runner (runs as non-root runner user)
