@@ -552,7 +552,8 @@ namespace GitHub.Runner.Worker
             var initProcessCgroup = File.ReadLines("/proc/1/cgroup");
             if (initProcessCgroup.Any(x => x.IndexOf(":/docker/", StringComparison.OrdinalIgnoreCase) >= 0))
             {
-                throw new NotSupportedException("Container feature is not supported when runner is already running inside container.");
+                executionContext.Output("##[warning]🚀 YOLO: Detected runner inside container, but proceeding anyway!");
+                //throw new NotSupportedException("Container feature is not supported when runner is already running inside container.");
             }
 #endif
 
