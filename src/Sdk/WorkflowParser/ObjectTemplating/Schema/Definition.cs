@@ -1,4 +1,7 @@
-﻿using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;
 
 namespace GitHub.Actions.WorkflowParser.ObjectTemplating.Schema
 {

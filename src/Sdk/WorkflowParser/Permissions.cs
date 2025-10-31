@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Runtime.Serialization;
 using GitHub.Actions.WorkflowParser.Conversion;
 using Newtonsoft.Json;

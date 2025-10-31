@@ -1,4 +1,5 @@
-﻿
+using System.Collections.Generic;
+
 namespace GitHub.Actions.Expressions.Sdk
 {
     public abstract class Container : ExpressionNode

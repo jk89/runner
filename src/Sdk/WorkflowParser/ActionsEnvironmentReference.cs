@@ -1,3 +1,5 @@
+#nullable enable
+
 using System.Runtime.Serialization;
 using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;
 

@@ -1,4 +1,9 @@
-﻿using System.ComponentModel;
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Linq;
 using System.Runtime.Serialization;
 using GitHub.Actions.WorkflowParser.ObjectTemplating;
 using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;

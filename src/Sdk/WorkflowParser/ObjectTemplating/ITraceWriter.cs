@@ -1,4 +1,6 @@
-﻿namespace GitHub.Actions.WorkflowParser.ObjectTemplating
+using System;
+
+namespace GitHub.Actions.WorkflowParser.ObjectTemplating
 {
     public interface ITraceWriter
     {

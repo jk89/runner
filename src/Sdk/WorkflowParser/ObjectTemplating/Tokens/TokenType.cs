@@ -1,3 +1,5 @@
+using System;
+
 ﻿namespace GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens
 {
     internal static class TokenType

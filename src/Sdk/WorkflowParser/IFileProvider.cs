@@ -1,4 +1,6 @@
-﻿namespace GitHub.Actions.WorkflowParser
+using System;
+
+namespace GitHub.Actions.WorkflowParser
 {
     public interface IFileProvider
     {

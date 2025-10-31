@@ -1,3 +1,5 @@
+using System;
+
 namespace GitHub.Actions.WorkflowParser.Conversion
 {
     internal static class PermissionLevelExtensions

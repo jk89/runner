@@ -1,4 +1,5 @@
-﻿using GitHub.Actions.WorkflowParser.Conversion;
+using System;
+using GitHub.Actions.WorkflowParser.Conversion;
 using GitHub.Actions.WorkflowParser.ObjectTemplating;
 
 namespace GitHub.Actions.WorkflowParser

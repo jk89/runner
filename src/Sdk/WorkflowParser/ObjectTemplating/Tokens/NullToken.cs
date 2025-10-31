@@ -1,4 +1,5 @@
-﻿using System.Runtime.Serialization;
+using System;
+using System.Runtime.Serialization;
 using GitHub.Actions.Expressions.Sdk;
 
 namespace GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens

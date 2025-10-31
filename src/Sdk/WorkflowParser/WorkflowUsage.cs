@@ -1,3 +1,6 @@
+#nullable enable
+
+using System;
 using GitHub.Actions.Expressions;
 using GitHub.Actions.Expressions.Sdk;
 using GitHub.Actions.WorkflowParser.ObjectTemplating;

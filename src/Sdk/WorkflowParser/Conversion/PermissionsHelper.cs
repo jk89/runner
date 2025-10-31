@@ -1,3 +1,7 @@
+#nullable enable
+
+using System;
+using System.Linq;
 using GitHub.Actions.WorkflowParser.ObjectTemplating;
 
 namespace GitHub.Actions.WorkflowParser.Conversion

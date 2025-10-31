@@ -1,4 +1,6 @@
+#nullable enable
 
+using System;
 using GitHub.Actions.WorkflowParser.ObjectTemplating;
 using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;
 

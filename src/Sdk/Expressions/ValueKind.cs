@@ -1,4 +1,5 @@
-﻿
+using System;
+
 namespace GitHub.Actions.Expressions
 {
     public enum ValueKind

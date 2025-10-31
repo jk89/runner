@@ -1,4 +1,6 @@
-﻿namespace GitHub.Actions.Expressions.Tokens
+using System;
+
+namespace GitHub.Actions.Expressions.Tokens
 {
     internal enum TokenKind
     {

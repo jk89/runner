@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json;
+#nullable enable
+
+using Newtonsoft.Json;
 
 namespace GitHub.Actions.WorkflowParser
 {

@@ -1,3 +1,4 @@
+using System;
 using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;
 
 namespace GitHub.Actions.WorkflowParser.ObjectTemplating

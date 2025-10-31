@@ -1,4 +1,6 @@
-﻿namespace GitHub.Actions.WorkflowParser.Conversion
+using System;
+
+namespace GitHub.Actions.WorkflowParser.Conversion
 {
     internal static class WorkflowTemplateConstants
     {

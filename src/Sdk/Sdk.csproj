@@ -9,7 +9,7 @@
         <NoWarn>NU1701;NU1603;SYSLIB0050;SYSLIB0051</NoWarn>
         <Version>$(Version)</Version>
         <DefineConstants>TRACE</DefineConstants>
-        <LangVersion>8.0</LangVersion>
+        <LangVersion>11.0</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     </PropertyGroup>
 

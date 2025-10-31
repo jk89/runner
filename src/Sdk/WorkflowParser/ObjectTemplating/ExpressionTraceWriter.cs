@@ -1,4 +1,6 @@
-﻿namespace GitHub.Actions.WorkflowParser.ObjectTemplating
+using System;
+
+namespace GitHub.Actions.WorkflowParser.ObjectTemplating
 {
     /// <summary>
     /// Wraps an ITraceWriter so it can be passed for expression evaluation.

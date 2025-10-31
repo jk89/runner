@@ -1,4 +1,6 @@
-﻿using System.Runtime.Serialization;
+#nullable enable
+
+using System.Runtime.Serialization;
 using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;
 
 namespace GitHub.Actions.WorkflowParser

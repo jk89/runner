@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using GitHub.Actions.Expressions.Sdk;
 using GitHub.Actions.Expressions.Sdk.Functions;

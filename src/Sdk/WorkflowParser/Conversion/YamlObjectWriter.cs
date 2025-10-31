@@ -1,4 +1,6 @@
+using System;
 using System.Globalization;
+using System.IO;
 using GitHub.Actions.WorkflowParser.ObjectTemplating;
 using YamlDotNet.Core.Events;
 

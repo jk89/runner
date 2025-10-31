@@ -1,5 +1,9 @@
 #nullable disable // Temporary: should be removed and issues fixed manually
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
 namespace GitHub.Actions.WorkflowParser
 {
     internal static class EnumerableExtensions

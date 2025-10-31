@@ -1,3 +1,5 @@
+using System;
+
 namespace GitHub.Actions.WorkflowParser.ObjectTemplating
 {
     /// <summary>

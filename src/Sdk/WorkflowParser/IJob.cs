@@ -1,4 +1,7 @@
-﻿using System.Runtime.Serialization;
+#nullable enable
+
+using System.Collections.Generic;
+using System.Runtime.Serialization;
 using GitHub.Actions.WorkflowParser.ObjectTemplating.Tokens;
 using Newtonsoft.Json;
 

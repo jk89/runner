@@ -1,4 +1,9 @@
-﻿using System.Runtime.Serialization;
+#nullable enable
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.Serialization;
 
 namespace GitHub.Actions.WorkflowParser
 {

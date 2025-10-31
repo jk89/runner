@@ -1,4 +1,6 @@
-﻿namespace GitHub.Actions.WorkflowParser
+using System.Collections.Generic;
+
+namespace GitHub.Actions.WorkflowParser
 {
     internal static class CollectionsExtensions
     {
