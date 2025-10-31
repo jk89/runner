@@ -34,5 +34,6 @@ jobs:
 
       - name: Test Redis service
         run: |
+          apt-get update && apt-get install -y redis-tools
           echo "💾 Pinging Redis..."
           redis-cli -h redis ping
