@@ -108,6 +108,7 @@ The runner is configured via a `.env` file. See [`.env.example`](.env.example) f
 **Required variables:**
 - `REPOSITORY` - Repository (`username/repo` or `orgname/repo`) or Organisation (`orgname`) to register runner with
 - `ACCESS_TOKEN` - GitHub Personal Access Token (see [Token Setup](#github-token-setup) above)
+- `DOCKER_SYSBOX_RUNTIME` - Use Sysbox (always set to true)
 
 **Optional variables:**
 - `RUNNER_NAME` - Prefix for runner names (default: `yolo-runner`)
@@ -123,6 +124,7 @@ The runner is configured via a `.env` file. See [`.env.example`](.env.example) f
 
 **Repository-level runner** (`.env`):
 ```bash
+DOCKER_SYSBOX_RUNTIME=true
 REPOSITORY=username/myrepo  # or orgname/myrepo
 ACCESS_TOKEN=ghp_xxxxx
 RUNNER_NAME=yolo-repo-runner
@@ -131,6 +133,7 @@ RUNNER_LABELS=self-hosted,linux,docker,yolo,repo
 
 **Organisation-level runner** (`.env`):
 ```bash
+DOCKER_SYSBOX_RUNTIME=true
 REPOSITORY=orgname
 ACCESS_TOKEN=ghp_xxxxx
 RUNNER_NAME=yolo-org-runner
@@ -209,6 +212,7 @@ For production workloads, run separate pools for different performance tiers.
 
 **High-performance runners** (`.env.highperf`):
 ```bash
+DOCKER_SYSBOX_RUNTIME=true
 REPOSITORY=orgname
 ACCESS_TOKEN=ghp_xxxxx
 RUNNER_NAME=yolo-runner-highperf
@@ -217,6 +221,7 @@ RUNNER_LABELS=self-hosted,linux,docker,yolo,highperf
 
 **Standard runners** (`.env.standard`):
 ```bash
+DOCKER_SYSBOX_RUNTIME=true
 REPOSITORY=orgname
 ACCESS_TOKEN=ghp_xxxxx
 RUNNER_NAME=yolo-runner-standard
