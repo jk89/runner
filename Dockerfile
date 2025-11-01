@@ -25,7 +25,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN useradd -m -s /bin/bash runner \
  && mkdir -p /home/runner/actions /home/runner/actions/_work /home/runner/actions/_tools /home/runner/logs \
  && chown -R runner:runner /home/runner \
- # allow runner to run dockerd and pkill as sudo without password (restricted)
+ # allow runner to run as sudo without password
  && echo 'runner ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/runner \
  && chmod 0440 /etc/sudoers.d/runner
 

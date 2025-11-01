@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  gha-runner:
+  gha-runner-yolo:
     build:
       context: .
       dockerfile: Dockerfile

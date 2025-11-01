@@ -12,7 +12,6 @@ jobs:
 
     container:
       image: node:18
-      options: --volume /var/run/docker.sock:/var/run/docker.sock
 
     services:
       redis:
@@ -43,14 +42,14 @@ jobs:
         run: |
           apt-get update && apt-get install -y docker.io
 
-      - name: Run a nested container
+      - name: DiD³ - Run a nested container
         run: |
-          echo "🚀 Running a container from the job container:"
+          echo "🚀 DiD³: Running a container from the job container!"
           docker run --rm alpine:latest sh -c 'echo "Hello from D³!" && uname -a'
 
-      - name: Prove DiD³ - Install Docker and build runner from within itself
+      - name: DiD³ - Install Docker and build runner from within itself
         run: |
-          echo "🎯 DiD³ PROOF: Installing Docker and building the runner from within a job running on that runner!"
+          echo "🎯 DiD³: Installing Docker and building the runner from within a job running on that runner!"
           docker build -t gha-runner-inception:latest .
           docker images | grep inception
           echo "✅ Successfully built runner image from within the runner!"

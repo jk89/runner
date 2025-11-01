@@ -46,6 +46,11 @@ cleanup() {
     echo "🐳 Stopping Docker daemon..."
     sudo pkill --pidfile /home/runner/dockerd.pid 2>/dev/null || true
   fi
+
+  unset ACCESS_TOKEN
+  unset REG_TOKEN
+  unset REMOVAL_TOKEN
+
   echo "👋 Exiting..."
 }
 
@@ -77,13 +82,10 @@ echo "⚙️  Configuring runner..."
 ./config.sh \
   --url "https://github.com/${REPOSITORY}" \
   --token "${REG_TOKEN}" \
-  --name "${RUNNER_NAME:-yolo-runner-$(hostname)}" \
+  --name "${RUNNER_NAME:-yolo-runner}-$(hostname)" \
   --labels "${RUNNER_LABELS:-self-hosted,linux,docker,yolo}" \
   --ephemeral \
   --unattended
-
-unset ACCESS_TOKEN
-unset REG_TOKEN
 
 echo ""
 echo "🎯 YOLO MODE ACTIVATED!"
