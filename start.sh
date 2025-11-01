@@ -84,8 +84,9 @@ echo "⚙️  Configuring runner..."
   --token "${REG_TOKEN}" \
   --name "${RUNNER_NAME:-yolo-runner}-$(hostname)" \
   --labels "${RUNNER_LABELS:-self-hosted,linux,docker,yolo}" \
-  --ephemeral \
   --unattended
+
+#  --ephemeral \ # Removing this to hopefully stop workers dying
 
 echo ""
 echo "🎯 YOLO MODE ACTIVATED!"
