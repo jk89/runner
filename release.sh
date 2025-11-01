@@ -15,7 +15,7 @@ cd "$SCRIPT_DIR"
 # Configuration
 IMAGE_NAME="gha-runner-yolo"
 VERSION=${VERSION:-"2.324.0-yolo"}
-REGISTRY="docker.nori.it.com"
+REGISTRY="0x6a6f6e6e79"
 
 echo -e "${BLUE}🚀 YOLO Runner Release${NC}"
 echo ""

@@ -1,39 +1,130 @@
-<p align="center">
-  <img src="docs/res/github-graph.png">
-</p>
+# YOLO Runner – Self-Hosted GitHub Actions Runner (DiD³ + Sysbox)
 
-# GitHub Actions Runner
+A **self-hosted GitHub Actions runner** supporting **DiD³** — Docker-in-Docker-in-Docker — powered by [Sysbox](https://github.com/nestybox/sysbox).
 
-[![Actions Status](https://github.com/actions/runner/workflows/Runner%20CI/badge.svg)](https://github.com/actions/runner/actions)
+`docker pull 0x6a6f6e6e79/gha-runner-yolo:latest` [link](https://hub.docker.com/r/0x6a6f6e6e79/gha-runner-yolo)
 
-The runner is the application that runs a job from a GitHub Actions workflow. It is used by GitHub Actions in the [hosted virtual environments](https://github.com/actions/virtual-environments), or you can [self-host the runner](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/about-self-hosted-runners) in your own environment.
+Tested on Ubuntu 22.04
 
-## Get Started
+---
 
-For more information about installing and using self-hosted runners, see [Adding self-hosted runners](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/adding-self-hosted-runners) and [Using self-hosted runners in a workflow](https://help.github.com/en/actions/automating-your-workflow-with-github-actions/using-self-hosted-runners-in-a-workflow)
+## Why Sysbox
 
-Runner releases:
+Sysbox lets containers act like lightweight VMs:
 
-![win](docs/res/win_sm.png) [Pre-reqs](docs/start/envwin.md) | [Download](https://github.com/actions/runner/releases)  
+- Enables **safe nested containers** (no `--privileged` required)  
+- Provides full **PID, user, and mount namespaces**  
+- **Mounts just work** — inner containers can bind and volume-mount cleanly  
 
-![macOS](docs/res/apple_sm.png)  [Pre-reqs](docs/start/envosx.md) | [Download](https://github.com/actions/runner/releases)  
+---
 
-![linux](docs/res/linux_sm.png)  [Pre-reqs](docs/start/envlinux.md) | [Download](https://github.com/actions/runner/releases)
+## Install Sysbox (v0.6.6)
 
-### Note
+```bash
+# 1. Stop and remove all containers
+docker rm $(docker ps -a -q) -f
 
-Thank you for your interest in this GitHub repo, however, right now we are not taking contributions. 
+# 2. Download and install Sysbox v0.6.6
+wget https://downloads.nestybox.com/sysbox/releases/v0.6.6/sysbox-ce_0.6.6-0.linux_amd64.deb
+sudo apt-get install ./sysbox-ce_0.6.6-0.linux_amd64.deb -y
 
-We continue to focus our resources on strategic areas that help our customers be successful while making developers' lives easier. While GitHub Actions remains a key part of this vision, we are allocating resources towards other areas of Actions and are not taking contributions to this repository at this time. The GitHub public roadmap is the best place to follow along for any updates on features we’re working on and what stage they’re in.
+# 3. Restart Docker
+sudo systemctl restart docker
 
-We are taking the following steps to better direct requests related to GitHub Actions, including:
+# 4. Reconfigure the Sysbox package
+sudo dpkg --configure -a
 
-1. We will be directing questions and support requests to our [Community Discussions area](https://github.com/orgs/community/discussions/categories/actions)
+# 5. Verify installation
+sysbox-runc --version
+# expected: version: 0.6.6
 
-2. High Priority bugs can be reported through Community Discussions or you can report these to our support team https://support.github.com/contact/bug-report.
+docker info | grep Runtimes
+# expected: sysbox-runc listed
+```
 
-3. Security Issues should be handled as per our [security.md](security.md)
+## Example compose
 
-We will still provide security updates for this project and fix major breaking changes during this time.
+```
+version: '3.8'
 
-You are welcome to still raise bugs in this repo.
+services:
+  gha-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: 0x6a6f6e6e79/gha-runner-yolo:latest
+    runtime: sysbox-runc
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - runner-work:/home/runner/actions/_work
+      - runner-tools:/home/runner/actions/_tools
+
+volumes:
+  runner-work:
+  runner-tools:
+```
+
+## Example workflow
+
+```
+name: YOLO Runner Minimal Test
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  container-and-service:
+    runs-on: [self-hosted, yolo]
+
+    container:
+      image: node:18
+      options: --volume /var/run/docker.sock:/var/run/docker.sock
+
+    services:
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inside container
+        run: |
+          echo "🐳 Node version inside container:"
+          node --version
+          echo "📦 NPM version:"
+          npm --version
+
+      - name: Test Redis service
+        run: |
+          apt-get update && apt-get install -y redis-tools
+          echo "💾 Pinging Redis..."
+          redis-cli -h redis ping
+
+      - name: Install Docker CLI
+        run: |
+          apt-get update && apt-get install -y docker.io
+
+      - name: Run a nested container
+        run: |
+          echo "🚀 Running a container from the job container:"
+          docker run --rm alpine:latest sh -c 'echo "Hello from D³!" && uname -a'
+
+      - name: Prove DiD³ - Install Docker and build runner from within itself
+        run: |
+          echo "🎯 DiD³ PROOF: Installing Docker and building the runner from within a job running on that runner!"
+          docker build -t gha-runner-inception:latest .
+          docker images | grep inception
+          echo "✅ Successfully built runner image from within the runner!"
+```
+
+# [Runner output](https://github.com/jk89/yolo-runner/actions/runs/18988465070/job/54236864804)
