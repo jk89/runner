@@ -10,7 +10,7 @@ Tested on Ubuntu 22.04
 
 ## What is DiD³?
 
-**Three layers of Docker isolation:**
+**Three layers of Docker:**
 
 1. **D¹**: Host machine running Docker with Sysbox
 2. **D²**: Runner container with isolated dockerd
@@ -32,15 +32,15 @@ Sysbox lets containers act like lightweight VMs:
 ### ❌ Typical Setup (INSECURE):
 ```yaml
 volumes:
-  - /var/run/docker.sock:/var/run/docker.sock  # Root access to host!
+  - /var/run/docker.sock:/var/run/docker.sock  # Direct access to host Docker daemon!
 ```
-**Problem**: Malicious workflow can escape and compromise entire host.
+**Problem**: Malicious workflow can launch privileged containers on the host, mount host filesystems, and effectively gain root-equivalent access to the host system.
 
 ### ✅ YOLO Runner (SECURE):
 ```yaml
 runtime: sysbox-runc  # Isolated dockerd per runner
 ```
-**Benefit**: Each runner has isolated Docker daemon. Container escape only affects that runner.
+**Benefit**: Each runner has its own isolated Docker daemon. Container escape or malicious `docker run --privileged` commands only affect that runner's isolated environment, not the host.
 
 ---
 
@@ -63,8 +63,15 @@ sudo dpkg --configure -a
 sysbox-runc --version
 # expected: version: 0.6.6
 
+# 6. Verify docker can see the runtime
 docker info | grep Runtimes
 # expected: sysbox-runc listed
+
+# 7. Ensure sysbox service has started
+systemctl status sysbox
+
+# 8. If sysbox has not started then start it
+sudo systemctl start sysbox
 ```
 
 ## GitHub Token Setup
@@ -93,9 +100,12 @@ docker info | grep Runtimes
 
 For production org-level runners, **create a dedicated bot account**:
 1. Create a new GitHub account (e.g., `myorg-runner-bot`)
-2. Add it to your organisation with appropriate permissions
-3. Generate the token from this bot account
-4. **Benefit**: Token compromise doesn't expose your personal account - only the bot's limited permissions are at risk
+2. Add it to your organisation as a member
+4. Generate the token from this bot account
+5. Check its permissions:
+  - `https://github.com/organizations/<org-name>/settings/org_role_assignments`
+  - You made need to give it the role of CI/CD Admin, All-repository admin
+6. **Benefit**: Token compromise doesn't expose your personal account - only the bot's limited permissions are at risk
 
 ---
 
@@ -163,9 +173,6 @@ volumes:
 ### 3. Start runners:
 ```bash
 docker-compose up -d
-
-# Or scale to multiple runners:
-docker-compose up -d --scale gha-runner-yolo=10
 ```
 
 ### 4. Create a workflow:
@@ -280,12 +287,14 @@ volumes:
 
 Start different tiers:
 ```bash
-# 10 high-performance runners
-docker-compose -f docker-compose.highperf.yml up -d --scale gha-runner-yolo=10
+# high-performance runner
+docker compose -f docker-compose.highperf.yml up -d
 
-# 40 standard runners
-docker-compose -f docker-compose.standard.yml up -d --scale gha-runner-yolo=40
+# standard runner
+docker compose -f docker-compose.standard.yml up -d
 ```
+
+Add more blocks and ensure each runner has a unique volume to avoid lock file contention.ov
 
 Target specific tiers in workflows:
 ```yaml
@@ -300,3 +309,54 @@ jobs:
     steps:
       - run: echo "Running on standard hardware"
 ```
+
+---
+## Gotchas & Known Issues
+
+### 1. **Don't Mix Container and Non-Container Jobs**
+
+**DO NOT** mix jobs with and without `container:` in the same workflow. You will encounter permission errors.
+
+**Why it happens:**
+
+The runner mounts `/home/runner/actions/_work` into every job container at the same path:
+
+- Job 1 (with `container:`): Creates `.git/index.lock` as root (UID 0) on the host filesystem
+- Job 2 (no `container:`): Runs as `runner` (UID 1001), can't access root-owned files
+- Result: Permission denied
+
+**Solution:** Either all jobs use `container:` or none do. If you mix them, you get UID mismatches on the shared work volume.
+
+### 2. **Non-Container Jobs Require Permission Fix**
+
+When running a job without a `container:` definition, you must fix workspace permissions before checkout:
+```yaml
+steps:
+  - name: Fix workspace permissions
+    run: sudo chown -R runner:runner $GITHUB_WORKSPACE
+  
+  - uses: actions/checkout@v4
+```
+
+**Why:** Without `container:`, the runner's C# code doesn't automatically handle ownership. The workspace may have files from previous jobs owned by different users.
+
+**Note:** This `sudo` runs inside the runner container, not on the host.
+
+### 3. **One Work Volume Per Runner**
+
+Always use separate work volumes for each runner instance:
+```yaml
+volumes:
+  - runner-work-1:/home/runner/actions/_work  # ✅ Unique per runner
+  - runner-tools:/home/runner/actions/_tools  # ✅ Can be shared
+```
+
+**Never do this:**
+```yaml
+volumes:
+  - runner-work:/home/runner/actions/_work  # ❌ Shared across runners
+```
+
+**Why:** Multiple runners writing to the same work volume will encounter Git lock file conflicts.
+
+---
