@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: gha-runner-yolo:latest
+    image: gha-runner-yolo:latest-2
     runtime: sysbox-runc
     restart: unless-stopped
     env_file:
