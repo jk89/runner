@@ -11,7 +11,8 @@ FROM --platform=$TARGETPLATFORM ubuntu:22.04 AS runtime
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive
 
-# Install dependencies including Docker
+# Install dependencies including Docker (pinned for Sysbox compatibility)
+# docker-ce 28.5.1 and containerd.io 1.7.28 - containerd 1.7.29+ breaks Sysbox
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget sudo git jq ca-certificates gnupg lsb-release apt-transport-https gnupg2 \
     iproute2 procps lsof util-linux gpg openssh-client \
@@ -21,7 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get update && apt-get install -y --no-install-recommends \
     docker-ce=5:28.5.1-1~ubuntu.22.04~jammy \
     docker-ce-cli=5:28.5.1-1~ubuntu.22.04~jammy \
-    containerd.io \
+    containerd.io=1.7.28-1~ubuntu.22.04~jammy \
     docker-compose-plugin \
   && rm -rf /var/lib/apt/lists/*
 

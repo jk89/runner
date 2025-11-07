@@ -24,7 +24,7 @@ docker build \
     --build-arg TARGETARCH=amd64 \
     --build-arg OS=linux \
     -t ${IMAGE_NAME}:${VERSION} \
-    -t ${IMAGE_NAME}:latest-2 \
+    -t ${IMAGE_NAME}:latest \
     .
 
 echo ""
