@@ -18,7 +18,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && mkdir -p /etc/apt/keyrings \
   && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
   && echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
-  && apt-get update && apt-get install -y --no-install-recommends docker-ce docker-ce-cli containerd.io docker-compose-plugin \
+  && apt-get update && apt-get install -y --no-install-recommends \
+    docker-ce=5:28.5.1-1~ubuntu.22.04~jammy \
+    docker-ce-cli=5:28.5.1-1~ubuntu.22.04~jammy \
+    containerd.io \
+    docker-compose-plugin \
   && rm -rf /var/lib/apt/lists/*
 
 # Create non-root runner user and required dirs
