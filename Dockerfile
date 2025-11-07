@@ -14,7 +14,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Install dependencies including Docker
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl wget sudo git jq ca-certificates gnupg lsb-release apt-transport-https gnupg2 \
-    iproute2 procps lsof util-linux gpg \
+    iproute2 procps lsof util-linux gpg openssh-client \
   && mkdir -p /etc/apt/keyrings \
   && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg \
   && echo "deb [arch=${TARGETARCH} signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" > /etc/apt/sources.list.d/docker.list \
