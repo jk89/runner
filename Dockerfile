@@ -22,6 +22,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   && apt-get update && apt-get install -y --no-install-recommends \
     docker-ce=5:28.5.1-1~ubuntu.22.04~jammy \
     docker-ce-cli=5:28.5.1-1~ubuntu.22.04~jammy \
+    docker-buildx \
     containerd.io=1.7.28-1~ubuntu.22.04~jammy \
     docker-compose-plugin \
   && rm -rf /var/lib/apt/lists/*

@@ -75,6 +75,12 @@ if [[ "${DOCKER_SYSBOX_RUNTIME:-}" == "true" ]]; then
     fi
     sleep 1
   done
+
+  # Setup QEMU for multi-arch builds
+  echo "🔧 Setting up QEMU for cross-platform builds..."
+  sudo mount binfmt_misc -t binfmt_misc /proc/sys/fs/binfmt_misc 2>/dev/null || true
+  docker run --rm --privileged multiarch/qemu-user-static --reset -p yes >/dev/null 2>&1 || true
+  echo "✅ QEMU ready"
 fi
 
 # Configure ephemeral runner (runs as non-root runner user)
