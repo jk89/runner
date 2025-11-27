@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 # Create non-root runner user and required dirs
 RUN useradd -m -s /bin/bash runner \
- && mkdir -p /home/runner/actions /home/runner/actions/_work /home/runner/actions/_tools /home/runner/logs \
+ && mkdir -p /home/runner/actions /home/runner/actions/_work /home/runner/actions/_tools /home/runner/logs /home/runner/.docker/buildx \
  && chown -R runner:runner /home/runner \
  # allow runner to run as sudo without password
  && echo 'runner ALL=(ALL) NOPASSWD:ALL' > /etc/sudoers.d/runner \
