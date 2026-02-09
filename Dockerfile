@@ -6,7 +6,7 @@ COPY . .
 RUN chmod +x ./src/dev.sh && cd src && ./dev.sh layout && ./dev.sh package
 
 # Stage 2: Runtime
-FROM --platform=$TARGETPLATFORM ubuntu:22.04 AS runtime
+FROM ubuntu:22.04 AS runtime
 
 ARG TARGETARCH
 ENV DEBIAN_FRONTEND=noninteractive

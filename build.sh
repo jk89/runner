@@ -11,7 +11,7 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Get version from git or default
-VERSION=${VERSION:-"2.324.0-yolo-4"}
+VERSION=${VERSION:-"2.331.0-yolo-1"}
 IMAGE_NAME=${IMAGE_NAME:-"gha-runner-yolo"}
 
 echo -e "${BLUE}Image:${NC} ${IMAGE_NAME}:${VERSION}"

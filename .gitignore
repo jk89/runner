@@ -28,3 +28,8 @@ TestLogs
 .DS_Store
 .mono
 **/*.DotSettings.user
+
+releases/
+sysbox-ce_0.6.6-0.linux_amd64.deb
+.github
+.env
