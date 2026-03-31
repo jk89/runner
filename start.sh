@@ -97,4 +97,11 @@ echo "⚙️  Configuring runner..."
 echo ""
 echo "🎯 YOLO MODE ACTIVATED!"
 echo "🏃 Starting runner..."
-./run.sh & wait $!
+./run.sh &
+wait $!
+returnCode=$?
+if [[ $returnCode -eq 7 ]]; then
+  echo "⚠️  Runner version is deprecated (exit code 7). Update required."
+  exit 7
+fi
+exit $returnCode

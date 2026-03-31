@@ -27,9 +27,15 @@ namespace GitHub.Runner.Worker
         public StepsContext StepsContext { get; set; }
         public Variables Variables { get; set; }
         public bool WriteDebug { get; set; }
+        public bool EnableDebugger { get; set; }
         public string InfrastructureFailureCategory { get; set; }
         public JObject ContainerHookState { get; set; }
         public bool HasTemplateEvaluatorMismatch { get; set; }
         public bool HasActionManifestMismatch { get; set; }
+        public bool HasDeprecatedSetOutput { get; set; }
+        public bool HasDeprecatedSaveState { get; set; }
+        public HashSet<string> DeprecatedNode20Actions { get; set; }
+        public HashSet<string> UpgradedToNode24Actions { get; set; }
+        public HashSet<string> Arm32Node20Actions { get; set; }
     }
 }
