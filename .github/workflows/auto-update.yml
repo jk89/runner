@@ -40,15 +40,23 @@ jobs:
             exit $RC
           fi
 
-      - name: Push changes and tags
-        if: steps.merge.outputs.updated == 'true'
+      - name: Check for unpushed tag
+        id: tagcheck
+        if: steps.merge.outputs.updated != 'true'
         run: |
           YOLO_VERSION=$(cat yoloVersion)
-          git push origin main
-          git push origin "refs/tags/${YOLO_VERSION}"
+          if ! git ls-remote --tags --refs origin "$YOLO_VERSION" | grep -q .; then
+            echo "Tag $YOLO_VERSION missing from remote, rebuilding"
+            git tag "$YOLO_VERSION"
+            echo "rebuild=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push commits
+        if: steps.merge.outputs.updated == 'true'
+        run: git push origin main
 
       - name: Login to Docker Hub
-        if: steps.merge.outputs.updated == 'true'
+        if: steps.merge.outputs.updated == 'true' || steps.tagcheck.outputs.rebuild == 'true'
         uses: docker/login-action@v3
         with:
           registry: docker.io
@@ -56,18 +64,18 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        if: steps.merge.outputs.updated == 'true'
+        if: steps.merge.outputs.updated == 'true' || steps.tagcheck.outputs.rebuild == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Read version
-        if: steps.merge.outputs.updated == 'true'
+        if: steps.merge.outputs.updated == 'true' || steps.tagcheck.outputs.rebuild == 'true'
         id: version
         run: |
           VERSION=$(cat yoloVersion)
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Build and push Docker image
-        if: steps.merge.outputs.updated == 'true'
+        if: steps.merge.outputs.updated == 'true' || steps.tagcheck.outputs.rebuild == 'true'
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -77,3 +85,9 @@ jobs:
             docker.io/${{ secrets.DOCKERHUB_USERNAME }}/gha-runner-yolo:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Push tag
+        if: steps.merge.outputs.updated == 'true' || steps.tagcheck.outputs.rebuild == 'true'
+        run: |
+          YOLO_VERSION=$(cat yoloVersion)
+          git push origin "refs/tags/${YOLO_VERSION}"
