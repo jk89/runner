@@ -268,6 +268,36 @@ namespace GitHub.DistributedTask.Pipelines
         }
 
         /// <summary>
+        /// Optional welcome message shown in the debugger console when a client connects.
+        /// Only used when the <c>actions_runner_override_debugger_welcome_message</c>
+        /// feature flag is set to <c>true</c> in the job variables. With the flag set,
+        /// a non-empty value is shown as-is and a null or empty value suppresses the
+        /// default welcome message. When the flag is not set, the runner shows its
+        /// built-in help text and this field is ignored.
+        /// </summary>
+        [DataMember(EmitDefaultValue = false)]
+        public string DebuggerWelcomeMessage
+        {
+            get;
+            set;
+        }
+
+        /// <summary>
+        /// Gets the workflow-level action dependencies (lockfile entries)
+        /// </summary>
+        public IList<String> ActionsDependencies
+        {
+            get
+            {
+                if (m_actionsDependencies == null)
+                {
+                    m_actionsDependencies = new List<String>();
+                }
+                return m_actionsDependencies;
+            }
+        }
+
+        /// <summary>
         /// Gets the collection of variables associated with the current context.
         /// </summary>
         public IDictionary<String, VariableValue> Variables
@@ -441,6 +471,11 @@ namespace GitHub.DistributedTask.Pipelines
                 m_variables = null;
             }
 
+            if (m_actionsDependencies?.Count == 0)
+            {
+                m_actionsDependencies = null;
+            }
+
             // todo: remove after feature-flag DistributedTask.EvaluateContainerOnRunner is enabled everywhere
             if (!string.IsNullOrEmpty(m_jobContainerResourceAlias))
             {
@@ -465,6 +500,9 @@ namespace GitHub.DistributedTask.Pipelines
 
         [DataMember(Name = "Variables", EmitDefaultValue = false)]
         private IDictionary<String, VariableValue> m_variables;
+
+        [DataMember(Name = "dependencies", EmitDefaultValue = false)]
+        private List<String> m_actionsDependencies;
 
         // todo: remove after feature-flag DistributedTask.EvaluateContainerOnRunner is enabled everywhere
         [DataMember(Name = "JobSidecarContainers", EmitDefaultValue = false)]

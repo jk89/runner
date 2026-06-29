@@ -179,6 +179,7 @@ namespace GitHub.Runner.Common
                 public static readonly string EmitCompositeMarkers = "actions_runner_emit_composite_markers";
                 public static readonly string BatchActionResolution = "actions_batch_action_resolution";
                 public static readonly string UseBearerTokenForCodeload = "actions_use_bearer_token_for_codeload";
+                public static readonly string OverrideDebuggerWelcomeMessage = "actions_runner_override_debugger_welcome_message";
             }
 
             // Node version migration related constants
@@ -205,7 +206,7 @@ namespace GitHub.Runner.Common
                 public static readonly string Node20DeprecationUrl = "https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/";
 
                 // Node 20 migration dates (hardcoded fallbacks, can be overridden via job variables)
-                public static readonly string Node24DefaultDate = "June 2nd, 2026";
+                public static readonly string Node24DefaultDate = "June 16th, 2026";
                 public static readonly string Node20RemovalDate = "September 16th, 2026";
 
                 // Variable keys for server-overridable dates
@@ -307,6 +308,7 @@ namespace GitHub.Runner.Common
                 public static readonly string ForcedInternalNodeVersion = "ACTIONS_RUNNER_FORCED_INTERNAL_NODE_VERSION";
                 public static readonly string ForcedActionsNodeVersion = "ACTIONS_RUNNER_FORCE_ACTIONS_NODE_VERSION";
                 public static readonly string PrintLogToStdout = "ACTIONS_RUNNER_PRINT_LOG_TO_STDOUT";
+                public static readonly string DisableStdoutMultilineLogPrefixing = "ACTIONS_RUNNER_DISABLE_STDOUT_MULTILINE_LOG_PREFIXING";
                 public static readonly string ActionArchiveCacheDirectory = "ACTIONS_RUNNER_ACTION_ARCHIVE_CACHE";
                 public static readonly string SymlinkCachedActions = "ACTIONS_RUNNER_SYMLINK_CACHED_ACTIONS";
                 public static readonly string EmitCompositeMarkers = "ACTIONS_RUNNER_EMIT_COMPOSITE_MARKERS";

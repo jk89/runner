@@ -16,6 +16,7 @@ using GitHub.DistributedTask.WebApi;
 using GitHub.Runner.Common;
 using GitHub.Runner.Common.Util;
 using GitHub.Runner.Sdk;
+using GitHub.Runner.Worker.Dap;
 using GitHub.Services.Common;
 using Newtonsoft.Json;
 using Pipelines = GitHub.DistributedTask.Pipelines;
@@ -50,6 +51,7 @@ namespace GitHub.Runner.Worker
         private Task _diskSpaceCheckTask = null;
         private CancellationTokenSource _serviceConnectivityCheckToken = new();
         private Task _serviceConnectivityCheckTask = null;
+        private IDapDebugger _dapDebugger;
 
         // Download all required actions.
         // Make sure all condition inputs are valid.
@@ -67,6 +69,7 @@ namespace GitHub.Runner.Worker
 
             List<IStep> preJobSteps = new();
             List<IStep> jobSteps = new();
+            var initSucceeded = false;
             using (var register = jobContext.CancellationToken.Register(() => { context.CancelToken(); }))
             {
                 try
@@ -77,20 +80,25 @@ namespace GitHub.Runner.Worker
 
                     var setting = HostContext.GetService<IConfigurationStore>().GetSettings();
                     var credFile = HostContext.GetConfigFile(WellKnownConfigFile.Credentials);
-                    if (File.Exists(credFile))
+                    var credData = File.Exists(credFile) ? IOUtil.LoadObject<CredentialData>(credFile) : null;
+                    // self-hosted runner is the only runner type using OAuth, can be identified via clientId
+                    if (credData != null &&
+                        credData.Data.TryGetValue("clientId", out _))
                     {
-                        var credData = IOUtil.LoadObject<CredentialData>(credFile);
-                        if (credData != null &&
-                            credData.Data.TryGetValue("clientId", out var clientId))
+                        context.Output($"Runner name: '{setting.AgentName}'");
+                        // use system variable for group name since self-hosted runners can be renamed
+                        if (message.Variables.TryGetValue("system.runnerGroupName", out VariableValue runnerGroupName))
                         {
-                            // print out HostName for self-hosted runner
-                            context.Output($"Runner name: '{setting.AgentName}'");
-                            if (message.Variables.TryGetValue("system.runnerGroupName", out VariableValue runnerGroupName))
-                            {
-                                context.Output($"Runner group name: '{runnerGroupName.Value}'");
-                            }
-                            context.Output($"Machine name: '{Environment.MachineName}'");
+                            context.Output($"Runner group name: '{runnerGroupName.Value}'");
                         }
+                        // print out machine name for self-hosted runner
+                        context.Output($"Machine name: '{Environment.MachineName}'");
+                    }
+                    // print runner info for lhr runners, skips standard runners (PoolId = 0)
+                    else if (setting.PoolId > 0 && !string.IsNullOrEmpty(setting.PoolName) && !string.IsNullOrEmpty(setting.AgentName))
+                    {
+                        context.Output($"Runner name: '{setting.AgentName}'");
+                        context.Output($"Runner group name: '{setting.PoolName}'");
                     }
 
                     var setupInfoFile = HostContext.GetConfigFile(WellKnownConfigFile.SetupInfo);
@@ -337,6 +345,38 @@ namespace GitHub.Runner.Worker
                                 preJobSteps.Add(preStep);
                             }
                         }
+                        else if (step.Type == Pipelines.StepType.BackgroundStepControl)
+                        {
+                            var ctrl = step as Pipelines.BackgroundStepControl;
+                            Trace.Info($"Adding {ctrl.ControlType} step for: {string.Join(", ", ctrl.StepIds ?? Array.Empty<string>())}");
+                            var controlType = ctrl.ControlType;
+                            if (string.IsNullOrEmpty(controlType))
+                            {
+                                throw new ArgumentException($"Background step control '{step.Name}' has no control type.");
+                            }
+                            if (controlType != Pipelines.BackgroundControlTypes.Wait &&
+                                controlType != Pipelines.BackgroundControlTypes.WaitAll &&
+                                controlType != Pipelines.BackgroundControlTypes.Cancel)
+                            {
+                                throw new ArgumentException($"Unknown background step control type '{controlType}' for step '{step.Name}'.");
+                            }
+                            var displayName = (ctrl.DisplayNameToken as GitHub.DistributedTask.ObjectTemplating.Tokens.StringToken)?.Value
+                                ?? step.DisplayName ?? step.Name ?? ctrl.ControlType;
+                            var data = new BackgroundStepControlFlowData
+                            {
+                                Type = controlType,
+                                StepId = step.Id,
+                                StepName = step.Name,
+                                StepIds = ctrl.StepIds,
+                                ParallelGroupId = ctrl.ParallelGroupId,
+                            };
+                            var bgCoord = HostContext.GetService<IBackgroundStepCoordinator>();
+                            jobSteps.Add(new JobExtensionRunner(
+                                runAsync: bgCoord.RunControlFlowAsync,
+                                condition: $"{PipelineTemplateConstants.Always}()",
+                                displayName: displayName,
+                                data: data));
+                        }
                     }
 
                     if (message.Variables.TryGetValue("system.workflowFileFullPath", out VariableValue workflowFileFullPath))
@@ -392,13 +432,107 @@ namespace GitHub.Runner.Worker
                     }
 
                     // Create execution context for job steps
+                    // Build mapping of logical step ID (ContextName) → external ID (timeline record GUID)
+                    // so wait/cancel steps can reference background steps by external ID.
+                    var contextNameToExternalId = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+                    var hasBackgroundSteps = false;
+                    var backgroundStepExternalIds = new List<string>();
+
+                    // Track which background steps are explicitly covered by wait/wait-all/cancel
+                    var coveredBackgroundIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
                     foreach (var step in jobSteps)
                     {
                         if (step is IActionRunner actionStep)
                         {
                             ArgUtil.NotNull(actionStep, step.DisplayName);
                             intraActionStates.TryGetValue(actionStep.Action.Id, out var intraActionState);
-                            actionStep.ExecutionContext = jobContext.CreateChild(actionStep.Action.Id, actionStep.DisplayName, actionStep.Action.Name, null, actionStep.Action.ContextName, ActionRunStage.Main, intraActionState);
+
+                            var isBg = actionStep.Action?.Background == true;
+                            actionStep.ExecutionContext = jobContext.CreateChild(
+                                actionStep.Action.Id, actionStep.DisplayName, actionStep.Action.Name,
+                                null, actionStep.Action.ContextName, ActionRunStage.Main, intraActionState,
+                                isBackground: isBg,
+                                parallelGroupId: isBg ? actionStep.Action.ParallelGroupId : null);
+
+                            if (isBg)
+                            {
+                                hasBackgroundSteps = true;
+                                var externalId = actionStep.Action.Id.ToString("N");
+                                contextNameToExternalId[actionStep.Action.ContextName] = externalId;
+                                backgroundStepExternalIds.Add(externalId);
+                            }
+                        }
+                        else if (step is JobExtensionRunner runnerStep && runnerStep.Data is BackgroundStepControlFlowData cf)
+                        {
+                            // Resolve step IDs to external IDs and track coverage
+                            string[] externalIds = null;
+                            if (cf.StepIds != null && cf.StepIds.Length > 0)
+                            {
+                                foreach (var id in cf.StepIds)
+                                {
+                                    coveredBackgroundIds.Add(id);
+                                }
+                                externalIds = cf.StepIds
+                                    .Where(id => contextNameToExternalId.ContainsKey(id))
+                                    .Select(id => contextNameToExternalId[id])
+                                    .ToArray();
+                            }
+
+                            if (cf.Type == Pipelines.BackgroundControlTypes.WaitAll)
+                            {
+                                externalIds = backgroundStepExternalIds.Count > 0 ? backgroundStepExternalIds.ToArray() : null;
+                                foreach (var id in contextNameToExternalId.Keys)
+                                {
+                                    coveredBackgroundIds.Add(id);
+                                }
+                            }
+
+                            step.ExecutionContext = jobContext.CreateChild(
+                                cf.StepId, step.DisplayName, cf.StepName,
+                                null, cf.StepName, ActionRunStage.Main,
+                                backgroundControlType: cf.Type,
+                                backgroundControlStepIds: externalIds,
+                                parallelGroupId: cf.ParallelGroupId);
+                        }
+                    }
+
+                    // Add implicit wait-all only if there are background steps not covered by any wait/wait-all/cancel
+                    var allBackgroundIds = contextNameToExternalId.Keys;
+                    var hasUncoveredBackgroundSteps = allBackgroundIds.Any(id => !coveredBackgroundIds.Contains(id));
+                    if (hasBackgroundSteps)
+                    {
+                        // Initialize coordinator only when there are background steps
+                        var bgCoordinator = HostContext.GetService<IBackgroundStepCoordinator>();
+                        var maxBgSteps = jobContext.Global.Variables.GetInt("system.runner.maxbackgroundsteps");
+                        var maxConcurrent = (maxBgSteps.HasValue && maxBgSteps.Value > 0) ? maxBgSteps.Value : 10;
+                        bgCoordinator.InitializeCoordinator(maxConcurrent);
+
+                        // Add implicit wait-all only if there are uncovered background steps
+                        if (hasUncoveredBackgroundSteps)
+                        {
+                            var implicitStepId = Guid.NewGuid();
+                            var implicitWaitAllData = new BackgroundStepControlFlowData
+                            {
+                                Type = Pipelines.BackgroundControlTypes.WaitAll,
+                                StepId = implicitStepId,
+                                StepName = "__implicit_wait_all",
+                            };
+                            var implicitWaitAll = new JobExtensionRunner(
+                                runAsync: bgCoordinator.RunControlFlowAsync,
+                                condition: $"{PipelineTemplateConstants.Always}()",
+                                displayName: "Wait for all background steps",
+                                data: implicitWaitAllData);
+                            var uncoveredExternalIds = contextNameToExternalId
+                                .Where(kvp => !coveredBackgroundIds.Contains(kvp.Key))
+                                .Select(kvp => kvp.Value)
+                                .ToArray();
+                            implicitWaitAll.ExecutionContext = jobContext.CreateChild(
+                                implicitStepId, implicitWaitAll.DisplayName, "__implicit_wait_all",
+                                null, "__implicit_wait_all", ActionRunStage.Main,
+                                backgroundControlType: Pipelines.BackgroundControlTypes.WaitAll,
+                                backgroundControlStepIds: uncoveredExternalIds.Length > 0 ? uncoveredExternalIds : null);
+                            jobSteps.Add(implicitWaitAll);
                         }
                     }
 
@@ -476,6 +610,41 @@ namespace GitHub.Runner.Worker
                     Trace.Info($"Start checking service connectivity in background.");
                     _serviceConnectivityCheckTask = CheckServiceConnectivityAsync(context, _serviceConnectivityCheckToken.Token);
 
+                    // Start the DAP debugger and wait for a client connection inside
+                    // "Set up job" so the step stays in-progress while we wait.
+                    if (jobContext.Global.Debugger?.Enabled == true)
+                    {
+                        Trace.Info("Debugger enabled — starting inside Set up job");
+                        context.Output("Starting debugger…");
+
+                        try
+                        {
+                            _dapDebugger = HostContext.GetService<IDapDebugger>();
+                            await _dapDebugger.StartAsync(jobContext);
+
+                            context.Output("Waiting for debugger client to connect…");
+
+                            await _dapDebugger.WaitUntilReadyAsync();
+                            context.Output("Debugger connected.");
+                            AddDebuggerConnectionTelemetry(jobContext, "Connected");
+                        }
+                        catch (OperationCanceledException) when (jobContext.CancellationToken.IsCancellationRequested)
+                        {
+                            Trace.Info("Job was cancelled before debugger client connected.");
+                            AddDebuggerConnectionTelemetry(jobContext, "Canceled");
+                            context.Error("Job was cancelled before debugger client connected.");
+                            throw;
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.Error($"DAP debugger failed: {ex.Message}");
+                            AddDebuggerConnectionTelemetry(jobContext, $"Failed: {ex.GetType().Name}");
+                            context.Error("The debugger failed to start or no debugger client connected in time.");
+                            throw;
+                        }
+                    }
+
+                    initSucceeded = true;
                     return steps;
                 }
                 catch (OperationCanceledException ex) when (jobContext.CancellationToken.IsCancellationRequested)
@@ -496,10 +665,34 @@ namespace GitHub.Runner.Worker
                 }
                 finally
                 {
+                    // If InitializeJob failed after the debugger was started,
+                    // tear down the transport here since FinalizeJob won't run.
+                    if (!initSucceeded && _dapDebugger != null)
+                    {
+                        try
+                        {
+                            await _dapDebugger.StopAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.Warning($"DAP debugger cleanup during failed init: {ex.Message}");
+                        }
+                        _dapDebugger = null;
+                    }
+
                     context.Debug("Finishing: Set up job");
                     context.Complete();
                 }
             }
+        }
+
+        private static void AddDebuggerConnectionTelemetry(IExecutionContext jobContext, string result)
+        {
+            jobContext.Global.JobTelemetry.Add(new JobTelemetry
+            {
+                Type = JobTelemetryType.General,
+                Message = $"DebuggerConnectionResult: {result}"
+            });
         }
 
         private string GetWorkflowReference(IDictionary<string, VariableValue> variables)
@@ -777,6 +970,34 @@ namespace GitHub.Runner.Worker
                 }
                 finally
                 {
+                    // Pause for debugger inspection, then tear down the DAP session.
+                    // OnJobCompletedAsync pauses first, then sends terminated/exited
+                    // events and stops the transport.
+                    if (_dapDebugger != null)
+                    {
+                        context.Output("Job completed — pausing for debugger inspection. Press continue to finish.");
+                        try
+                        {
+                            await _dapDebugger.OnJobCompletedAsync();
+                        }
+                        catch (Exception ex)
+                        {
+                            Trace.Warning($"DAP debugger completion error: {ex.Message}");
+                        }
+                        finally
+                        {
+                            try
+                            {
+                                await _dapDebugger.StopAsync();
+                            }
+                            catch (Exception ex)
+                            {
+                                Trace.Warning($"DAP debugger stop error: {ex.Message}");
+                            }
+                        }
+                        _dapDebugger = null;
+                    }
+
                     context.Debug("Finishing: Complete job");
                     context.Complete();
                 }
