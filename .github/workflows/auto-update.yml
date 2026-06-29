@@ -43,8 +43,9 @@ jobs:
       - name: Push changes and tags
         if: steps.merge.outputs.updated == 'true'
         run: |
+          YOLO_VERSION=$(cat yoloVersion)
           git push origin main
-          git push origin --tags
+          git push origin "refs/tags/${YOLO_VERSION}"
 
       - name: Login to Docker Hub
         if: steps.merge.outputs.updated == 'true'
