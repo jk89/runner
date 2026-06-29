@@ -14,7 +14,7 @@ cd "$SCRIPT_DIR"
 
 # Configuration
 IMAGE_NAME="gha-runner-yolo"
-VERSION=${VERSION:-"2.333.1-yolo-1"}
+VERSION=${VERSION:-$(cat yoloVersion)}
 REGISTRY="0x6a6f6e6e79"
 
 echo -e "${BLUE}🚀 YOLO Runner Release${NC}"

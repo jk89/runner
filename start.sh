@@ -90,8 +90,7 @@ echo "⚙️  Configuring runner..."
   --token "${REG_TOKEN}" \
   --name "${RUNNER_NAME:-yolo-runner}-$(hostname)" \
   --labels "${RUNNER_LABELS:-self-hosted,linux,docker,yolo}" \
-  --unattended \
-  --disableupdate # self-update breaks the container (missing binary after swap); update by rebuilding the image instead
+  --unattended
 
 #  --ephemeral \ # Removing this to hopefully stop workers dying
 
